@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Heleus.Base\Heleus.Base.csproj" />
+    <ProjectReference Include="..\Heleus.ServiceBase\Heleus.ServiceBase.csproj" />
+  </ItemGroup>
+</Project>

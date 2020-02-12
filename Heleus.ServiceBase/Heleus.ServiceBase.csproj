@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.1" />
+    <PackageReference Include="NetMQ" Version="4.0.0.207" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Sqlite\" />
+    <Folder Include="Messages\" />
+    <Folder Include="PushService\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Heleus.Base\Heleus.Base.csproj" />
+  </ItemGroup>
+</Project>
