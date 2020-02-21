@@ -89,7 +89,7 @@ namespace Heleus.ServiceHelper
         {
             await base.Init(dataPath);
             _running = true;
-            TaskRunner.Run(Loop);
+            TaskRunner.Run(() => Loop());
         }
 
         async Task Loop()

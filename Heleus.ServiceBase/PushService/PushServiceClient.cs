@@ -51,7 +51,7 @@ namespace Heleus.PushService
             _pushServer.AddPushMessageReceiver(this);
 
             _running = true;
-            TaskRunner.Run(PingLoop);
+            TaskRunner.Run(() => PingLoop());
         }
 
         public Task<PushSubscriptionResponse> QueryDynamicUriData(string path)
@@ -187,7 +187,7 @@ namespace Heleus.PushService
                     break;
 
                 if (Log.LogTrace)
-                    Log.Trace($"Sending ping to PushServer at {_pushServer.BindAddress} with client id {_pushClientId}.", this);
+                    Log.Trace($"Sending ping to PushServer at {_pushServer?.BindAddress} with client id {_pushClientId}.", this);
 
                 _receivedPong = false;
                 pushClient.SendRemoteMessage(new PushServicePingMessage(PushServiceChainId, _pushClientId));
@@ -195,7 +195,7 @@ namespace Heleus.PushService
                 await Task.Delay(TimeSpan.FromSeconds(5));
 
                 if (!_receivedPong)
-                    Log.Warn($"No response from PushServer {_pushServer.BindAddress} received!", this);
+                    Log.Warn($"No response from PushServer {_pushServer?.BindAddress} received!", this);
 
                 //await Task.Delay(TimeSpan.FromSeconds(5));
             }

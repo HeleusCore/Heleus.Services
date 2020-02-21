@@ -40,7 +40,7 @@ namespace Heleus.CoreService
             _errorResport = new ErrorReportsService();
             await _errorResport.Init(dataPath);
 
-            _pushService = new PushServiceClient(configuration);
+            //_pushService = new PushServiceClient(configuration);
 
             return new ServiceResult(ServiceResultTypes.Ok, CoreServiceInfo.Version, CoreServiceInfo.Name);
         }
@@ -100,9 +100,9 @@ namespace Heleus.CoreService
             var senders = new HashSet<long>();
             var receivers = new HashSet<long>();
 
-            foreach(var transaction in block.Transactions)
+            foreach (var transaction in block.Transactions)
             {
-                if(transaction.TransactionType == CoreTransactionTypes.Transfer)
+                if (transaction.TransactionType == CoreTransactionTypes.Transfer)
                 {
                     var transferTransaction = transaction as TransferCoreTransaction;
 
@@ -136,7 +136,7 @@ namespace Heleus.CoreService
 
         public async Task<IPackable> QueryDynamicUriData(string path)
         {
-            if(_pushService != null)
+            if (_pushService != null)
             {
                 var result = await _pushService.QueryDynamicUriData(path);
                 if (result != null)

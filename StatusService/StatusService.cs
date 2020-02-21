@@ -87,8 +87,8 @@ namespace Heleus.StatusService
 
             _pushClient = new PushServiceClient(configuration);
 
-            TaskRunner.Run(TrendingLoop);
-            TaskRunner.Run(NotificationLoop);
+            TaskRunner.Run(() => TrendingLoop());
+            TaskRunner.Run(() => NotificationLoop());
 
             return new ServiceResult(ServiceResultTypes.Ok, StatusServiceInfo.Version, StatusServiceInfo.Name);
         }
@@ -258,7 +258,8 @@ namespace Heleus.StatusService
 
         public Task<ServiceResult> IsServiceTransactionValid(ServiceTransaction serviceTransaction)
         {
-            if (serviceTransaction.TransactionType == ServiceTransactionTypes.Join)
+            var type = serviceTransaction.TransactionType;
+            if (type == ServiceTransactionTypes.Join || type == ServiceTransactionTypes.RequestRevenue)
                 return Task.FromResult(ServiceResult.Ok);
 
             return Task.FromResult(new ServiceResult(ServiceResultTypes.False, (long)ServiceUserCodes.InvalidTransaction));
@@ -274,7 +275,7 @@ namespace Heleus.StatusService
             if (dataTransaction.PrivacyType == DataTransactionPrivacyType.PublicData)
             {
                 var chainIndex = dataTransaction.ChainIndex;
-                if(chainIndex == StatusServiceInfo.FanChainIndex)
+                if (chainIndex == StatusServiceInfo.FanChainIndex)
                 {
                     if (type == DataTransactionTypes.FeatureRequest && dataTransaction.HasFeatureRequest(FanRequest.FanRequestId))
                     {
@@ -282,7 +283,7 @@ namespace Heleus.StatusService
                         userCode = ServiceUserCodes.None;
                     }
                 }
-                else if(chainIndex == StatusServiceInfo.StatusDataChainIndex)
+                else if (chainIndex == StatusServiceInfo.StatusDataChainIndex)
                 {
                     if (type == DataTransactionTypes.Attachement)
                     {
@@ -320,11 +321,13 @@ namespace Heleus.StatusService
         {
             var block = blockData.Block;
 
-            foreach(var transaction in block.Transactions)
+            foreach (var transaction in block.Transactions)
             {
                 var index = transaction.GetFeature<AccountIndex>(AccountIndex.FeatureId)?.Index;
                 if (transaction.TransactionType == DataTransactionTypes.Attachement && index == StatusServiceInfo.MessageIndex)
                 {
+                    _host.MaintainChain.ProposeAccountRevenue(transaction.AccountId, transaction.Timestamp);
+
                     lock (_lock)
                     {
                         var a = transaction as AttachementDataTransaction;
@@ -355,7 +358,7 @@ namespace Heleus.StatusService
                 }
             }
 
-            if(_pushClient != null)
+            if (_pushClient != null)
                 return await _pushClient.QueryDynamicUriData(path);
 
             return null;
@@ -387,9 +390,9 @@ namespace Heleus.StatusService
             if (text.Length <= maxLength)
                 return text;
 
-            for(var i = cut; i < text.Length; i++)
+            for (var i = cut; i < text.Length; i++)
             {
-                if(char.IsWhiteSpace(text[i]))
+                if (char.IsWhiteSpace(text[i]))
                 {
                     return text.Substring(0, i);// + "\u2026";
                 }
@@ -452,7 +455,7 @@ namespace Heleus.StatusService
         {
             await QueryTrending();
 
-            while(_running)
+            while (_running)
             {
                 await Task.Delay(10000);
 
@@ -466,7 +469,7 @@ namespace Heleus.StatusService
                     }
                 }
 
-                if(trending != null)
+                if (trending != null)
                 {
                     var cleanupRecent = false;
                     var cleanupPopular = false;

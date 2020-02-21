@@ -80,8 +80,8 @@ namespace Heleus.ProfileService
             _errorResport = new ErrorReportsService();
             await _errorResport.Init(dataPath);
 
-            TaskRunner.Run(ProfileUpdateLoop);
-            TaskRunner.Run(SearchUpdateLoop);
+            TaskRunner.Run(() => ProfileUpdateLoop());
+            TaskRunner.Run(() => SearchUpdateLoop());
 
             return new ServiceResult(ServiceResultTypes.Ok, ProfileServiceInfo.Version, ProfileServiceInfo.Name);
         }

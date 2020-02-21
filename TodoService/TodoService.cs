@@ -7,11 +7,16 @@ using Heleus.Base;
 using Heleus.Network.Client.Record;
 using Heleus.Transactions.Features;
 using Heleus.Chain;
+using Heleus.Chain.Blocks;
+using Heleus.ServiceHelper;
 
 namespace Heleus.TodoService
 {
-    public class TodoService : IService
+    public class TodoService : IService, IServiceBlockHandler
     {
+        IServiceHost _host;
+        ErrorReportsService _errorResport;
+
         public void Initalize(ServiceOptions options)
         {
             options.EnableChainFeature(ChainType.Data, TodoServiceInfo.GroupChainIndex, Receiver.FeatureId);
@@ -23,15 +28,24 @@ namespace Heleus.TodoService
             options.EnableChainFeature(ChainType.Data, TodoServiceInfo.TodoDataChainIndex, Data.FeatureId);
         }
 
-        public Task<ServiceResult> Start(string configurationString, IServiceHost host)
+        public async Task<ServiceResult> Start(string configurationString, IServiceHost host)
         {
-            //var configuration = HeleusService.GetConfiguration(configurationString);
+            _host = host;
 
-            return Task.FromResult(new ServiceResult(ServiceResultTypes.Ok, TodoServiceInfo.Version, TodoServiceInfo.Name));
+            var configuration = Service.ServiceHelper.GetConfiguration(configurationString);
+            var dataPath = configuration[Service.ServiceHelper.ServiceDataPathKey];
+
+            _errorResport = new ErrorReportsService();
+            await _errorResport.Init(dataPath);
+
+            return new ServiceResult(ServiceResultTypes.Ok, TodoServiceInfo.Version, TodoServiceInfo.Name);
         }
 
         public Task Stop()
         {
+            _errorResport?.Dispose();
+            _errorResport = null;
+
             return Task.CompletedTask;
         }
 
@@ -121,7 +135,30 @@ namespace Heleus.TodoService
 
         public Task ClientErrorReports(long accountId, byte[] errorReports)
         {
-            //var reports = HeleusService.GerErrorReports(errorReports);
+            _errorResport?.QueueErrorReports(accountId, errorReports);
+            return Task.CompletedTask;
+        }
+
+        public Task NewBlockData(BlockData<CoreBlock> blockData)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task NewBlockData(BlockData<ServiceBlock> blockData)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task NewBlockData(BlockData<DataBlock> blockData)
+        {
+            var block = blockData.Block;
+
+            foreach (var transaction in block.Transactions)
+            {
+                if(transaction.ChainIndex == TodoServiceInfo.TodoDataChainIndex)
+                    _host.MaintainChain.ProposeAccountRevenue(transaction.AccountId, transaction.Timestamp);
+            }
+
             return Task.CompletedTask;
         }
     }

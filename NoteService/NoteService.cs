@@ -8,25 +8,40 @@ using Heleus.Base;
 using Heleus.Network.Client.Record;
 using Heleus.Transactions.Features;
 using Heleus.Chain;
+using Heleus.Chain.Blocks;
+using Heleus.ServiceHelper;
 
 namespace Heleus.NoteService
 {
-    public class NoteService : IService
+    public class NoteService : IService, IServiceBlockHandler
     {
+        IServiceHost _host;
+        ErrorReportsService _errorResport;
+
         public void Initalize(ServiceOptions options)
         {
             options.EnableChainFeature(ChainType.Data, 0, AccountIndex.FeatureId);
         }
 
-        public Task<ServiceResult> Start(string configurationString, IServiceHost host)
+        public async Task<ServiceResult> Start(string configurationString, IServiceHost host)
         {
-            //var configuration = HeleusService.GetConfiguration(configurationString);
+            _host = host;
 
-            return Task.FromResult(new ServiceResult(ServiceResultTypes.Ok, NoteServiceInfo.Version, NoteServiceInfo.Name));
+            var configuration = Service.ServiceHelper.GetConfiguration(configurationString);
+            var dataPath = configuration[Service.ServiceHelper.ServiceDataPathKey];
+
+            _errorResport = new ErrorReportsService();
+            await _errorResport.Init(dataPath);
+
+
+            return new ServiceResult(ServiceResultTypes.Ok, NoteServiceInfo.Version, NoteServiceInfo.Name);
         }
 
         public Task Stop()
         {
+            _errorResport?.Dispose();
+            _errorResport = null;
+
             return Task.CompletedTask;
         }
 
@@ -122,7 +137,29 @@ namespace Heleus.NoteService
 
         public Task ClientErrorReports(long accountId, byte[] errorReports)
         {
-            //var reports = HeleusService.GerErrorReports(errorReports);
+            _errorResport?.QueueErrorReports(accountId, errorReports);
+            return Task.CompletedTask;
+        }
+
+        public Task NewBlockData(BlockData<CoreBlock> blockData)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task NewBlockData(BlockData<ServiceBlock> blockData)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task NewBlockData(BlockData<DataBlock> blockData)
+        {
+            var block = blockData.Block;
+
+            foreach (var transaction in block.Transactions)
+            {
+                _host.MaintainChain.ProposeAccountRevenue(transaction.AccountId, transaction.Timestamp);
+            }
+
             return Task.CompletedTask;
         }
     }

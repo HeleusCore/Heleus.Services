@@ -124,7 +124,7 @@ namespace Heleus.MessageService
                         userCode = ServiceUserCodes.None;
                     }
                 }
-                else if(chainIndex == MessageServiceInfo.MessageDataChainIndex)
+                else if (chainIndex == MessageServiceInfo.MessageDataChainIndex)
                 {
                     var index = dataTransaction.GetFeature<SharedAccountIndex>(SharedAccountIndex.FeatureId)?.Index;
                     var indexType = MessageServiceInfo.GetIndexType(index);
